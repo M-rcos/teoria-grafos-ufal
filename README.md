@@ -6,7 +6,7 @@ Implementação dos quatro algoritmos clássicos de Grafos solicitados na discip
 
 ---
 
-## algoritmos
+## Algoritmos
 
 Cada algoritmo está contido em sua própria pasta, com código-fonte e Makefile independente:
 
@@ -22,12 +22,7 @@ Trabalho_Grafos.zip
 ## Compilação
 
 Cada pasta possui seu próprio **Makefile**, permitindo compilar individualmente:
-
-bash
-make -C prim
-make -C kruskal
-make -C dijkstra
-make -C kosaraju
+utilize make, no terminal, dentro da pasta de cada algoritmo e ele será compilado.
 
 
 Use -h para ajuda de uso nos algoritmos.

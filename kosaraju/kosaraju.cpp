@@ -8,157 +8,185 @@
 #include <functional>
 using namespace std;
 
-class Graph {
+class Grafo {
 private:
-    int V;
-    vector<vector<int>> adj;
-    vector<vector<int>> adjTranspose;
+    int numVertices;
+    vector<vector<int>> listaAdj;
+    vector<vector<int>> listaAdjTransposta;
 
 public:
-    Graph(int vertices) : V(vertices) {
-        adj.resize(vertices);
-        adjTranspose.resize(vertices);
+    Grafo(int vertices) : numVertices(vertices) {
+        listaAdj.resize(vertices);
+        listaAdjTransposta.resize(vertices);
     }
 
-    void addEdge(int u, int v) {
-        adj[u].push_back(v);
-        adjTranspose[v].push_back(u);
+    void adicionarAresta(int u, int v) {
+        listaAdj[u].push_back(v);
+        listaAdjTransposta[v].push_back(u);
     }
 
-    void DFS(int v, vector<bool>& visited, stack<int>& stack, const vector<vector<int>>& graph) {
-        visited[v] = true;
-        for (int neighbor : graph[v]) {
-            if (!visited[neighbor]) {
-                DFS(neighbor, visited, stack, graph);
+    void DFS(int v, vector<bool>& visitado, stack<int>& pilha, const vector<vector<int>>& grafo) {
+        visitado[v] = true;
+        for (int vizinho : grafo[v]) {
+            if (!visitado[vizinho]) {
+                DFS(vizinho, visitado, pilha, grafo);
             }
         }
-        stack.push(v);
+        pilha.push(v);
     }
 
-    void DFSCollect(int v, vector<bool>& visited, vector<int>& component, const vector<vector<int>>& graph) {
-        visited[v] = true;
-        component.push_back(v);
-        for (int neighbor : graph[v]) {
-            if (!visited[neighbor]) {
-                DFSCollect(neighbor, visited, component, graph);
+    void DFSColetar(int v, vector<bool>& visitado, vector<int>& componente, const vector<vector<int>>& grafo) {
+        visitado[v] = true;
+        componente.push_back(v);
+        for (int vizinho : grafo[v]) {
+            if (!visitado[vizinho]) {
+                DFSColetar(vizinho, visitado, componente, grafo);
             }
         }
     }
 
     vector<vector<int>> kosaraju() {
-        vector<bool> visited(V, false);
-        stack<int> stack;
+        vector<bool> visitado(numVertices, false);
+        stack<int> pilha;
 
         // Primeira DFS (grafo original)
-        for (int i = 0; i < V; i++) {
-            if (!visited[i]) {
-                DFS(i, visited, stack, adj);
+        for (int i = 0; i < numVertices; i++) {
+            if (!visitado[i]) {
+                DFS(i, visitado, pilha, listaAdj);
             }
         }
 
-        // Reset visited
-        fill(visited.begin(), visited.end(), false);
+        // Resetar visitados
+        fill(visitado.begin(), visitado.end(), false);
 
         // Segunda DFS (grafo transposto)
-        vector<vector<int>> scc;
-        while (!stack.empty()) {
-            int v = stack.top();
-            stack.pop();
+        vector<vector<int>> componentesFortementeConexas;
+        while (!pilha.empty()) {
+            int v = pilha.top();
+            pilha.pop();
 
-            if (!visited[v]) {
-                vector<int> component;
-                DFSCollect(v, visited, component, adjTranspose);
-                scc.push_back(component);
+            if (!visitado[v]) {
+                vector<int> componente;
+                DFSColetar(v, visitado, componente, listaAdjTransposta);
+                componentesFortementeConexas.push_back(componente);
             }
         }
 
-        return scc;
+        return componentesFortementeConexas;
     }
 
-    int getVertices() const { return V; }
+    int obterNumVertices() const { return numVertices; }
 };
 
-Graph readSCCFormat(const string& filename) {
-    ifstream file(filename);
-    if (!file.is_open()) {
-        cerr << "Erro ao abrir arquivo: " << filename << endl;
+Grafo lerFormatoSCC(const string& nomeArquivo) {
+    ifstream arquivo(nomeArquivo);
+    if (!arquivo.is_open()) {
+        cerr << "Erro ao abrir arquivo: " << nomeArquivo << endl;
         exit(1);
     }
 
-    string line;
-    int vertices, edges;
+    string linha;
+    int vertices, arestas;
 
     // Ler primeira linha: vértices arestas
-    getline(file, line);
-    stringstream ss(line);
-    ss >> vertices >> edges;
+    getline(arquivo, linha);
+    stringstream ss(linha);
+    ss >> vertices >> arestas;
 
-    Graph g(vertices);
+    Grafo g(vertices);
 
     // Ler arestas
-    int edges_read = 0;
-    while (edges_read < edges && getline(file, line)) {
-        if (line.empty()) continue;
+    int arestasLidas = 0;
+    while (arestasLidas < arestas && getline(arquivo, linha)) {
+        if (linha.empty()) continue;
 
-        stringstream ss(line);
+        stringstream ss(linha);
         int u, v;
 
         if (ss >> u >> v) {
-            g.addEdge(u - 1, v - 1); // Converter 1-based para 0-based
-            edges_read++;
+            g.adicionarAresta(u - 1, v - 1); // Converter 1-based para 0-based
+            arestasLidas++;
         }
     }
 
-    file.close();
+    arquivo.close();
     return g;
 }
 
-void printSCCResults(const vector<vector<int>>& scc) {
+void imprimirResultadosSCC(const vector<vector<int>>& componentesFortementeConexas, ostream& saida = cout) {
     // Converter componentes para formato de saída
-    vector<vector<int>> sortedComponents;
+    vector<vector<int>> componentesOrdenados;
 
-    for (auto& component : scc) {
-        vector<int> sortedComponent = component;
-        sort(sortedComponent.begin(), sortedComponent.end());
-        sortedComponents.push_back(sortedComponent);
+    for (auto& componente : componentesFortementeConexas) {
+        vector<int> componenteOrdenado = componente;
+        sort(componenteOrdenado.begin(), componenteOrdenado.end());
+        componentesOrdenados.push_back(componenteOrdenado);
     }
 
     // Ordenar componentes pelo menor vértice
-    sort(sortedComponents.begin(), sortedComponents.end(),
+    sort(componentesOrdenados.begin(), componentesOrdenados.end(),
          [](const vector<int>& a, const vector<int>& b) {
              return a[0] < b[0];
          });
 
     // Imprimir no formato esperado: uma linha por componente, vértices separados por espaço
-    for (size_t i = 0; i < sortedComponents.size(); i++) {
-        for (size_t j = 0; j < sortedComponents[i].size(); j++) {
-            if (j > 0) cout << " ";
-            cout << (sortedComponents[i][j] + 1); // Converter para 1-based
+    for (size_t i = 0; i < componentesOrdenados.size(); i++) {
+        for (size_t j = 0; j < componentesOrdenados[i].size(); j++) {
+            if (j > 0) saida << " ";
+            saida << (componentesOrdenados[i][j] + 1); // Converter para 1-based
         }
-        if (i < sortedComponents.size() - 1) {
-            cout << endl; // Nova linha para cada componente
+        if (i < componentesOrdenados.size() - 1) {
+            saida << endl; // Nova linha para cada componente
         }
     }
 }
 
-int main(int argc, char* argv[]) {
-    string filename;
+void mostrarAjuda(const string& nomePrograma) {
+    cout << "Uso: " << nomePrograma << " -f <arquivo> [-o <arquivo_saida>]" << endl;
+    cout << "Opções:" << endl;
+    cout << "  -h              : Mostra este help" << endl;
+    cout << "  -f <arquivo>    : Arquivo de entrada com o grafo" << endl;
+    cout << "  -o <arquivo>    : Redireciona a saída para o arquivo" << endl;
+}
 
+int main(int argc, char* argv[]) {
+    string nomeArquivo, arquivoSaida;
+
+    // Processar argumentos
     for (int i = 1; i < argc; i++) {
         string arg = argv[i];
-        if (arg == "-f" && i + 1 < argc) {
-            filename = argv[++i];
+        if (arg == "-h") {
+            mostrarAjuda(argv[0]);
+            return 0;
+        } else if (arg == "-f" && i + 1 < argc) {
+            nomeArquivo = argv[++i];
+        } else if (arg == "-o" && i + 1 < argc) {
+            arquivoSaida = argv[++i];
         }
     }
 
-    if (filename.empty()) {
-        cerr << "Uso: " << argv[0] << " -f <arquivo>" << endl;
+    if (nomeArquivo.empty()) {
+        cerr << "Erro: Arquivo de entrada não especificado." << endl;
+        mostrarAjuda(argv[0]);
         return 1;
     }
 
-    Graph g = readSCCFormat(filename);
-    vector<vector<int>> scc = g.kosaraju();
-    printSCCResults(scc);
+    Grafo g = lerFormatoSCC(nomeArquivo);
+    vector<vector<int>> componentesFortementeConexas = g.kosaraju();
+
+    // Saída
+    if (!arquivoSaida.empty()) {
+        ofstream arquivoSaidaStream(arquivoSaida);
+        if (arquivoSaidaStream.is_open()) {
+            imprimirResultadosSCC(componentesFortementeConexas, arquivoSaidaStream);
+            arquivoSaidaStream.close();
+        } else {
+            cerr << "Erro ao abrir arquivo de saída: " << arquivoSaida << endl;
+            return 1;
+        }
+    } else {
+        imprimirResultadosSCC(componentesFortementeConexas);
+    }
 
     return 0;
 }
